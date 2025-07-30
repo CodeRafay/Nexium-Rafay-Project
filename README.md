@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Recipe Generator
+
+A modern recipe generator app built with Next.js, Tailwind CSS, shadcn/ui, Supabase, and MongoDB.
+
+## Stack
+- Next.js (App Router)
+- Tailwind CSS
+- shadcn/ui (Radix UI, Lucide Icons)
+- Supabase (auth)
+- MongoDB (recipes)
 
 ## Getting Started
 
-First, run the development server:
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. Set up environment variables:
+   Create a `.env.local` file in the root directory with:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   MONGODB_URI=your_mongodb_connection_string
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Configure Supabase:
+   - Create a new project at [supabase.com](https://supabase.com)
+   - Enable Email Auth in Authentication > Settings
+   - Add your site URL to the redirect URLs in Authentication > URL Configuration
+   - Copy your project URL and anon key to `.env.local`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+5. Visit [http://localhost:3000](http://localhost:3000)
 
-## Learn More
+## Authentication Flow
 
-To learn more about Next.js, take a look at the following resources:
+The app uses Supabase's email-based magic link authentication:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. User enters email on `/login`
+2. Magic link is sent to their email
+3. Clicking the link redirects to `/callback`
+4. User is authenticated and redirected to `/recipes/generate`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Routes
 
-## Deploy on Vercel
+- `/` - Home page
+- `/login` - Authentication page
+- `/callback` - Magic link callback handler
+- `/recipes/generate` - Generate new recipes (protected)
+- `/recipes/saved` - View saved recipes (protected)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Folder Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/` - Next.js app directory (routes, pages, API)
+- `components/` - UI components
+- `lib/` - Utility libraries (Supabase, MongoDB, types, auth context)
+- `services/` - Business logic (auth, recipes)
+- `styles/` - Global and custom styles
+
+---
+
+Built with ❤️ using Next.js, Tailwind, and shadcn/ui.

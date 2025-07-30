@@ -1,0 +1,153 @@
+
+{
+  "name": "Recipe Generator Workflow (Corrected)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "recipe-generator",
+        "options": {
+          "responseCode": 200,
+          "responseMode": "onReceived"
+        }
+      },
+      "id": "7df5b5c2-f895-497c-97ed-9b7c6318be8a",
+      "name": "Webhook Trigger1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [-576, -32],
+      "webhookId": "611fd657-633c-4445-aa54-0122655c09cd"
+    },
+    {
+      "parameters": {
+        "functionCode": "return {\n  prompt: `\n  Generate a detailed recipe based on the following ingredients: ${$json.ingredients}.\n  ${$json.dietaryPreferences ? 'The recipe should also adhere to these preferences: ' + $json.dietaryPreferences + '.' : ''}\n  Please include:\n  - Recipe Title\n  - Ingredients list with quantities\n  - Step-by-step instructions\n  - Approximate prep time (e.g., '15 minutes')\n  - Approximate cook time (e.g., '30 minutes')\n  - Suggested dietary tags (e.g., 'Vegetarian', 'Gluten-Free', 'Vegan', 'Dairy-Free') if applicable.\n  Format the output as a JSON object wrapped in \\`\\`\\`json\\`\\`\\` with keys: 'title', 'ingredients' (array of objects {name, quantity}), 'instructions' (array of strings), 'prepTime', 'cookTime', 'dietaryTags' (array of strings).\n  Example:\n  \\`\\`\\`json\n  {\n    \"title\": \"Example Recipe\",\n    \"ingredients\": [{\"name\": \"item\", \"quantity\": \"1 unit\"}],\n    \"instructions\": [\"Step 1\", \"Step 2\"],\n    \"prepTime\": \"10 minutes\",\n    \"cookTime\": \"20 minutes\",\n    \"dietaryTags\": [\"Vegan\"]\n  }\n  \\`\\`\\`json\n  `\n};"
+      },
+      "id": "99eaad23-e90b-4d1f-a63d-c26d68b26da1",
+      "name": "Set Prompt1",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [-352, -32]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent",
+        "authentication": "queryAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contents",
+              "value": "=[{\"parts\": [{\"text\": {{ $node[\"Set Prompt1\"].json.prompt }} }]}]"
+            },
+            {
+              "name": "generationConfig",
+              "value": "{\"temperature\": 0.7, \"maxOutputTokens\": 1000}"
+            }
+          ]
+        },
+        "options": {
+          "headers": {
+            "headerParameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "7dbd4578-0874-4237-a21e-1722efb2a9fa",
+      "name": "Gemini API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [-112, -32],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "aVjR3WoRWZme5cqA",
+          "name": "Query Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "try {\n  let content = $json.candidates[0].content.parts[0].text;\n  content = content.replace(/```json\\n|\\n```/g, '');\n  return { json: JSON.parse(content) };\n} catch (error) {\n  throw new Error('Invalid JSON response from Gemini: ' + error.message);\n}"
+      },
+      "id": "0427a0b8-a12a-40fd-90e9-35eb54161f82",
+      "name": "Parse JSON1",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [288, -32]
+    },
+    {
+      "parameters": {
+        "respondWith": "={{ $node[\"Parse JSON1\"].json.json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "0b428b2e-f89c-4dbe-a64f-d5138579707e",
+      "name": "Webhook Response1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [496, -32],
+      "webhookId": "611fd657-633c-4445-aa54-0122655c09cd"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Set Prompt1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Prompt1": {
+      "main": [
+        [
+          {
+            "node": "Gemini API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini API": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON1": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "XWd3xkBMEr7kQx9w",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2a7812e240aeed64f14b9e4e25df9f375487b6a27420732a077cdcbb0438d7a1"
+  },
+  "tags": []
+}
