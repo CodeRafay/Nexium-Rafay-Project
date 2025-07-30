@@ -3,17 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase/client';
+import { Subscription } from '@supabase/supabase-js';
 
 export default function CallbackPage() {
     const router = useRouter();
     const [status, setStatus] = useState('Processing...');
 
     useEffect(() => {
-        let unsub: any;
+        let unsub: { data: { subscription: Subscription } } | null = null;
         let timeout: NodeJS.Timeout;
 
         const checkSession = async () => {
-            let { data: { session }, error } = await supabase.auth.getSession();
+            const { data: { session }, error } = await supabase.auth.getSession();
             console.log('Initial session:', session, error);
 
             if (session && session.user) {

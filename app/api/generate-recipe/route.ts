@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
             });
             if (!n8nRes.ok) throw new Error('n8n webhook failed');
             recipe = await n8nRes.json();
-        } catch (err) {
+        } catch (_err) {
             return NextResponse.json({ error: 'Failed to generate recipe' }, { status: 502 });
         }
 
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
             const recipesCol = await getCollection('recipes');
             const mongoRes = await recipesCol.insertOne({ ...recipe, userId, createdAt: new Date() });
             mongoId = mongoRes.insertedId.toString();
-        } catch (err) {
+        } catch (_err) {
             return NextResponse.json({ error: 'Failed to save recipe in MongoDB' }, { status: 500 });
         }
 
@@ -59,13 +59,13 @@ export async function POST(req: NextRequest) {
                 title: recipe.title,
             });
             if (insertError) throw insertError;
-        } catch (err) {
+        } catch (_err) {
             return NextResponse.json({ error: 'Failed to save recipe in Supabase' }, { status: 500 });
         }
 
         // 6. Return the full recipe
         return NextResponse.json({ ...recipe, id: mongoId });
-    } catch (err) {
+    } catch (_err) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

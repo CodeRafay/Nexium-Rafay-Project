@@ -8,11 +8,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { generateRecipe } from '../services/recipeService';
 import RecipeCard from './RecipeCard';
 
+interface Recipe {
+    title: string;
+    ingredients: string[];
+    instructions: string[];
+    prepTime: string;
+    cookTime: string;
+}
+
 export default function RecipeGeneratorForm() {
     const [ingredientsInput, setIngredientsInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [recipe, setRecipe] = useState<any>(null);
+    const [recipe, setRecipe] = useState<Recipe | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,7 +39,7 @@ export default function RecipeGeneratorForm() {
             }
             const result = await generateRecipe(ingredients);
             setRecipe(result);
-        } catch (err) {
+        } catch (_err) {
             setError('Failed to generate recipe.');
         } finally {
             setLoading(false);

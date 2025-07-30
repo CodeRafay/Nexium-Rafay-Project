@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, Document } from 'mongodb';
 
 const uri = process.env.MONGODB_URI!;
 const options = {};
@@ -12,7 +12,7 @@ const clientPromise = client.connect();
 
 export default clientPromise;
 
-export async function getCollection<T = any>(name: string) {
+export async function getCollection<T extends Document = Document>(name: string) {
   const conn = await clientPromise;
   const db = conn.db();
   return db.collection<T>(name);
