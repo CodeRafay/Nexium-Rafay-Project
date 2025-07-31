@@ -31,8 +31,8 @@ A modern recipe generator app built with Next.js, Tailwind CSS, shadcn/ui, Supab
    - Copy your project URL and anon key to `.env.local`
 
 4. Run the development server:
-   ```bash
-   npm run dev
+```bash
+npm run dev
    ```
 
 5. Visit [http://localhost:3000](http://localhost:3000)
