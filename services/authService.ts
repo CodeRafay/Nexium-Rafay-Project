@@ -4,6 +4,6 @@ export async function signInWithProvider(provider: 'google' | 'github') {
     return supabase.auth.signInWithOAuth({ provider });
 }
 
-export async function signOut() {
-    return supabase.auth.signOut();
+export async function logout() {
+  await supabase.auth.signOut();
 }

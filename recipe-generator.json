@@ -1,4 +1,3 @@
-
 {
   "name": "Recipe Generator Workflow (Corrected)",
   "nodes": [
@@ -12,21 +11,27 @@
         }
       },
       "id": "7df5b5c2-f895-497c-97ed-9b7c6318be8a",
-      "name": "Webhook Trigger1",
+      "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [-576, -32],
+      "position": [
+        -576,
+        -32
+      ],
       "webhookId": "611fd657-633c-4445-aa54-0122655c09cd"
     },
     {
       "parameters": {
-        "functionCode": "return {\n  prompt: `\n  Generate a detailed recipe based on the following ingredients: ${$json.ingredients}.\n  ${$json.dietaryPreferences ? 'The recipe should also adhere to these preferences: ' + $json.dietaryPreferences + '.' : ''}\n  Please include:\n  - Recipe Title\n  - Ingredients list with quantities\n  - Step-by-step instructions\n  - Approximate prep time (e.g., '15 minutes')\n  - Approximate cook time (e.g., '30 minutes')\n  - Suggested dietary tags (e.g., 'Vegetarian', 'Gluten-Free', 'Vegan', 'Dairy-Free') if applicable.\n  Format the output as a JSON object wrapped in \\`\\`\\`json\\`\\`\\` with keys: 'title', 'ingredients' (array of objects {name, quantity}), 'instructions' (array of strings), 'prepTime', 'cookTime', 'dietaryTags' (array of strings).\n  Example:\n  \\`\\`\\`json\n  {\n    \"title\": \"Example Recipe\",\n    \"ingredients\": [{\"name\": \"item\", \"quantity\": \"1 unit\"}],\n    \"instructions\": [\"Step 1\", \"Step 2\"],\n    \"prepTime\": \"10 minutes\",\n    \"cookTime\": \"20 minutes\",\n    \"dietaryTags\": [\"Vegan\"]\n  }\n  \\`\\`\\`json\n  `\n};"
+        "functionCode": "// Extract ingredients from the webhook payload\nconst ingredients = $json.ingredients || [];\n\n// Create a prompt for recipe generation\nconst prompt = `Generate a detailed recipe based on these ingredients: ${ingredients.join(', ')}.\n\nPlease provide:\n- A creative recipe title\n- A list of ingredients with quantities\n- Step-by-step cooking instructions\n- Prep time and cook time\n\nFormat the response as a JSON object with this exact structure:\n{\n  \"title\": \"Recipe Title\",\n  \"ingredients\": [\"ingredient 1\", \"ingredient 2\"],\n  \"instructions\": [\"Step 1\", \"Step 2\"],\n  \"prepTime\": \"10 minutes\",\n  \"cookTime\": \"25 minutes\"\n}\n\nMake sure the recipe is practical and uses the provided ingredients.`;\n\nreturn {\n  prompt: prompt,\n  ingredients: ingredients\n};"
       },
       "id": "99eaad23-e90b-4d1f-a63d-c26d68b26da1",
-      "name": "Set Prompt1",
+      "name": "Set Prompt",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
-      "position": [-352, -32]
+      "position": [
+        -352,
+        -32
+      ]
     },
     {
       "parameters": {
@@ -38,7 +43,7 @@
           "parameters": [
             {
               "name": "contents",
-              "value": "=[{\"parts\": [{\"text\": {{ $node[\"Set Prompt1\"].json.prompt }} }]}]"
+              "value": "=[{\"parts\": [{\"text\": {{ $node[\"Set Prompt\"].json.prompt }} }]}]"
             },
             {
               "name": "generationConfig",
@@ -61,7 +66,10 @@
       "name": "Gemini API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
-      "position": [-112, -32],
+      "position": [
+        -112,
+        -32
+      ],
       "credentials": {
         "httpQueryAuth": {
           "id": "aVjR3WoRWZme5cqA",
@@ -71,42 +79,48 @@
     },
     {
       "parameters": {
-        "functionCode": "try {\n  let content = $json.candidates[0].content.parts[0].text;\n  content = content.replace(/```json\\n|\\n```/g, '');\n  return { json: JSON.parse(content) };\n} catch (error) {\n  throw new Error('Invalid JSON response from Gemini: ' + error.message);\n}"
+        "functionCode": "try {\n  // Extract the text content from Gemini response\n  let content = $json.candidates[0].content.parts[0].text;\n  \n  // Clean up the response - remove markdown code blocks if present\n  content = content.replace(/```json\\n?|\\n?```/g, '').trim();\n  \n  // Parse the JSON response\n  const recipe = JSON.parse(content);\n  \n  // Validate the required fields\n  if (!recipe.title || !recipe.ingredients || !recipe.instructions) {\n    throw new Error('Missing required fields in recipe response');\n  }\n  \n  // Ensure ingredients and instructions are arrays\n  if (!Array.isArray(recipe.ingredients)) {\n    recipe.ingredients = [recipe.ingredients];\n  }\n  \n  if (!Array.isArray(recipe.instructions)) {\n    recipe.instructions = [recipe.instructions];\n  }\n  \n  // Set default times if not provided\n  if (!recipe.prepTime) recipe.prepTime = \"10 minutes\";\n  if (!recipe.cookTime) recipe.cookTime = \"20 minutes\";\n  \n  return { json: recipe };\n} catch (error) {\n  // Return a fallback recipe if parsing fails\n  console.error('Error parsing recipe:', error);\n  return {\n    json: {\n      title: \"Simple Recipe\",\n      ingredients: $node[\"Set Prompt\"].json.ingredients,\n      instructions: [\"Mix all ingredients together\", \"Cook until done\"],\n      prepTime: \"10 minutes\",\n      cookTime: \"20 minutes\"\n    }\n  };\n}"
       },
       "id": "0427a0b8-a12a-40fd-90e9-35eb54161f82",
-      "name": "Parse JSON1",
+      "name": "Parse Recipe",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
-      "position": [288, -32]
+      "position": [
+        288,
+        -32
+      ]
     },
     {
       "parameters": {
-        "respondWith": "={{ $node[\"Parse JSON1\"].json.json }}",
+        "respondWith": "={{ $node[\"Parse Recipe\"].json.json }}",
         "options": {
           "responseCode": 200
         }
       },
       "id": "0b428b2e-f89c-4dbe-a64f-d5138579707e",
-      "name": "Webhook Response1",
+      "name": "Webhook Response",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [496, -32],
+      "position": [
+        496,
+        -32
+      ],
       "webhookId": "611fd657-633c-4445-aa54-0122655c09cd"
     }
   ],
   "connections": {
-    "Webhook Trigger1": {
+    "Webhook Trigger": {
       "main": [
         [
           {
-            "node": "Set Prompt1",
+            "node": "Set Prompt",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Set Prompt1": {
+    "Set Prompt": {
       "main": [
         [
           {
@@ -121,18 +135,18 @@
       "main": [
         [
           {
-            "node": "Parse JSON1",
+            "node": "Parse Recipe",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Parse JSON1": {
+    "Parse Recipe": {
       "main": [
         [
           {
-            "node": "Webhook Response1",
+            "node": "Webhook Response",
             "type": "main",
             "index": 0
           }

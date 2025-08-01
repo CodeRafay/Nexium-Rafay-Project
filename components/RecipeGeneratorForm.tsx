@@ -5,22 +5,19 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { generateRecipe } from '../services/recipeService';
 import RecipeCard from './RecipeCard';
-
-interface Recipe {
-    title: string;
-    ingredients: string[];
-    instructions: string[];
-    prepTime: string;
-    cookTime: string;
-}
 
 export default function RecipeGeneratorForm() {
     const [ingredientsInput, setIngredientsInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [recipe, setRecipe] = useState<Recipe | null>(null);
+    const [recipe, setRecipe] = useState<{
+        title: string;
+        ingredients: string[];
+        instructions: string[];
+        prepTime: string;
+        cookTime: string;
+    } | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,10 +34,25 @@ export default function RecipeGeneratorForm() {
                 setLoading(false);
                 return;
             }
-            const result = await generateRecipe(ingredients);
+
+            const response = await fetch('/api/generate-recipe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ingredients }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to generate recipe');
+            }
+
+            const result = await response.json();
             setRecipe(result);
-        } catch (_err) {
-            setError('Failed to generate recipe.');
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to generate recipe.';
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -56,7 +68,7 @@ export default function RecipeGeneratorForm() {
                     id="ingredients"
                     value={ingredientsInput}
                     onChange={(e) => setIngredientsInput(e.target.value)}
-                    placeholder="e.g. tomato, cheese, basil\nor\ntomato\ncheese\nbasil"
+                    placeholder="e.g. tomato, cheese, basil&#10;or&#10;tomato&#10;cheese&#10;basil"
                     rows={4}
                     className="resize-y"
                 />
@@ -82,6 +94,8 @@ export default function RecipeGeneratorForm() {
                             `<strong>Instructions:</strong> ${recipe.instructions.join(' ')}<br/>` +
                             `<strong>Prep Time:</strong> ${recipe.prepTime}, <strong>Cook Time:</strong> ${recipe.cookTime}`
                         }
+                        prepTime={recipe.prepTime}
+                        cookTime={recipe.cookTime}
                     />
                 </div>
             )}
